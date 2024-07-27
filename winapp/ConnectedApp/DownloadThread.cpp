@@ -21,7 +21,7 @@ void DownloadThread::operator()(CommonObjects& common) {
     auto res = cli.Get("/breweries");
     if (res && res->status == 200) {
         auto json_result = nlohmann::json::parse(res->body);
-        std::cout << json_result.dump(4) << '\n';
+        // std::cout << json_result.dump(4) << '\n';
         
         for (const auto& brewery : json_result) {
             Brewery b;
