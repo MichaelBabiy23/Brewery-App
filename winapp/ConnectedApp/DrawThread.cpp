@@ -33,7 +33,7 @@ void DrawAppWindow(void* common_ptr)
     ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
 
     // Close button at top right
-    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 50)); // Adjust according to your needs
+    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 30)); // Adjust according to your needs
     ImVec4 closeButtonColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color
     ImGui::PushStyleColor(ImGuiCol_Button, closeButtonColor);
     if (ImGui::Button("X", ImVec2(20, 20))) {
