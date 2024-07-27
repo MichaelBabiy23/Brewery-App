@@ -19,7 +19,6 @@ void DownloadThread::operator()(CommonObjects& common) {
 
     httplib::Client cli(_download_url.c_str());
     auto res = cli.Get("/breweries");
-    int c = 0;
     if (res && res->status == 200) {
         auto json_result = nlohmann::json::parse(res->body);
         std::cout << json_result.dump(4) << '\n';
@@ -39,8 +38,6 @@ void DownloadThread::operator()(CommonObjects& common) {
 
 
             common.breweries.push_back(b);
-            std::cout << c << '\n';
-            c = c + 1;
         }
         common.data_ready = true;
     }
