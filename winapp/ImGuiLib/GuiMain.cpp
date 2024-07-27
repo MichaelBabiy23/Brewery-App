@@ -122,10 +122,24 @@ std::string reverse_utf8(const std::string_view input) {
 int GuiMain(drawcallback drawfunction, void* obj_ptr)
 {
     // Create application window
-    //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+
+    // Get monitor information for fullscreen
+    HMONITOR hMonitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO mi;
+    mi.cbSize = sizeof(mi);
+    GetMonitorInfo(hMonitor, &mi);
+
+    // Create fullscreen window
+    HWND hwnd = ::CreateWindowW(
+        wc.lpszClassName, L"Dear ImGui DirectX11 Example",
+        WS_POPUP, // WS_POPUP for fullscreen
+        mi.rcMonitor.left, mi.rcMonitor.top,
+        mi.rcMonitor.right - mi.rcMonitor.left,
+        mi.rcMonitor.bottom - mi.rcMonitor.top,
+        nullptr, nullptr, wc.hInstance, nullptr
+    );
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -136,8 +150,9 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr)
     }
 
     // Show the window
-    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
+    ::ShowWindow(hwnd, SW_SHOWMAXIMIZED);
     ::UpdateWindow(hwnd);
+
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -180,7 +195,7 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr)
     IM_ASSERT(font != nullptr);
 
     // Our state
-    bool show_demo_window = true;
+    bool show_demo_window = false;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -225,54 +240,7 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr)
 
         drawfunction(obj_ptr);
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
-        // You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            // Text to be displayed RTL (assuming Hebrew)
-              // Allocate temporary string for reversed characters
- 
-            static std::string_view text = (char*)u8" טקסט בעברית ";
-            ImGui::Text(text.data());
-            static std::string reversedText = reverse_utf8(text);
- 
-            ImGui::Text("%s", reversedText.c_str());
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button")) {                           // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-                std::this_thread::sleep_for(4ms);
-            }
-            ImGui::SetItemTooltip("I am a tooltip");
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
 
         // Rendering
         ImGui::Render();
@@ -283,8 +251,6 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr)
 
         // Present
         HRESULT hr = g_pSwapChain->Present(1, 0);   // Present with vsync
-        //HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
-        g_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
     }
 
     // Cleanup
@@ -307,8 +273,8 @@ bool CreateDeviceD3D(HWND hWnd)
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
     sd.BufferCount = 2;
-    sd.BufferDesc.Width = 0;
-    sd.BufferDesc.Height = 0;
+    sd.BufferDesc.Width = 0; // Set to 0 to use the window size
+    sd.BufferDesc.Height = 0; // Set to 0 to use the window size
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
@@ -317,7 +283,7 @@ bool CreateDeviceD3D(HWND hWnd)
     sd.OutputWindow = hWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
+    sd.Windowed = FALSE; // Set this to FALSE for fullscreen
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
     UINT createDeviceFlags = 0;
