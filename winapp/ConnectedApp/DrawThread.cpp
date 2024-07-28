@@ -9,6 +9,40 @@ void DrawAppWindow(void* common_ptr)
 {
     auto common = (CommonObjects*)common_ptr;
 
+    if (common->exit_flag)
+        return;
+
+    static int type_currentItem = -1;
+    static int country_currentItem = -1;
+
+    const char* type_options[] = {
+    "micro",
+    "brewery",
+    "nano",
+    "regiona",
+    "brewpub",
+    "large",
+    "planning",
+    "bar",
+    "contract",
+    "proprietor",
+    "closed"
+    };
+
+    const char* country_options[] = {
+        "Austria",
+        "England",
+        "France",
+        "Isle of Man",
+        "Ireland",
+        "Poland",
+        "Portugal",
+        "Scotland",
+        "Singapore",
+        "South Korea",
+        "United States"
+    };
+
     // Set custom colors and style for a brewery theme
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.95f, 0.93f, 0.85f, 1.0f)); // Light beige background
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.20f, 0.10f, 1.0f));      // Dark brown text
@@ -33,16 +67,23 @@ void DrawAppWindow(void* common_ptr)
     ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
 
     // Close button at top right
-    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 30)); // Adjust according to your needs
-    ImVec4 closeButtonColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color
-    ImGui::PushStyleColor(ImGuiCol_Button, closeButtonColor);
-    if (ImGui::Button("X", ImVec2(20, 20))) {
+    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 30)); 
+    //ImVec4 closeButtonColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));  // Red button
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+    if (ImGui::Button("X", ImVec2(30, 30))) {
         PostQuitMessage(0); // This will trigger the WM_DESTROY message
+        common->exit_flag = true;
     }
-    ImGui::PopStyleColor();
+    ImGui::PopStyleColor(2);
 
     // Display a welcome text
     ImGui::Text("Welcome to our brewery data base :)");
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.60f, 0.40f, 0.20f, 1.0f));          // Background of combo box
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.70f, 0.50f, 0.30f, 1.0f));   // Background when hovered
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.9f, 0.0f, 0.0f, 1.0f));    // Background when active
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));          // Background of the popup
 
     // URL input field with a buffer
     static char buff[input_length];
@@ -51,9 +92,66 @@ void DrawAppWindow(void* common_ptr)
     ImGui::SameLine();
     if (ImGui::Button("Search"))
         common->url = buff;
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(170);
+    if (ImGui::BeginCombo("##Select Type", type_currentItem >= 0 ? type_options[type_currentItem] : "Types"))
+    {
+        for (int i = 0; i < IM_ARRAYSIZE(type_options); i++)
+        {
+            bool isSelected = (type_currentItem == i);
+            if (ImGui::Selectable(type_options[i], isSelected))
+            {
+                {
+                    std::lock_guard<std::mutex> lock_gurd(common->mutex);
+                    type_currentItem = i;
+                    common->current_type = type_options[type_currentItem];
+                    common->current_countries = "";
+                    country_currentItem = -1;
+                    common->breweries.clear();
+                    common->cv.notify_one();
+                }
+            }
+            // Set the initial focus when opening the combo (e.g. first item)
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(170);
+    if (ImGui::BeginCombo("##Select ", country_currentItem >= 0 ? country_options[country_currentItem] : "Countries"))
+    {
+        for (int i = 0; i < IM_ARRAYSIZE(country_options); i++)
+        {
+            bool isSelected = (country_currentItem == i);
+            if (ImGui::Selectable(country_options[i], isSelected))
+            {
+                {
+                    std::lock_guard<std::mutex> lock_gurd(common->mutex);
+                    country_currentItem = i;
+                    common->current_countries = country_options[country_currentItem];
+                    common->current_type = "";
+                    type_currentItem = -1;
+                    common->breweries.clear();
+                    common->cv.notify_one();
+                }
+
+            }
+            // Set the initial focus when opening the combo (e.g. first item)
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopStyleColor(4);
 
     if (common->data_ready)
     {
+        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.7f, 0.7f, 0.2f, 1.00f));
         if (ImGui::BeginTable("Breweries", 4, ImGuiTableFlags_SizingStretchProp))
         {
             // Setting up table columns
@@ -102,10 +200,7 @@ void DrawAppWindow(void* common_ptr)
             }
             ImGui::EndTable();
         }
-        else
-        {
-            ImGui::Text("Failed to create table.");
-        }
+        ImGui::PopStyleColor(1);
     }
     else
     {
