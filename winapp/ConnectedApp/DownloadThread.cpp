@@ -19,25 +19,29 @@ void DownloadThread::operator()(CommonObjects& common) {
 
     httplib::Client cli(_download_url.c_str());
     std::string temp_coutrey;
+    std::string temp_search;
     std::string temp_type;
     while (true) {
-
         {
             std::lock_guard<std::mutex> lock_gurd(common.mutex);
             temp_coutrey = common.current_countries;
+            temp_search = common.current_serach;
             temp_type = common.current_type;
             common.current_countries = "";
             common.current_type = "";
+            common.current_serach = "";
         }
         std::string url = "/breweries";
         if (temp_coutrey != "")
-            url += "?by_country=" + temp_coutrey +  "&per_page=100";
+            url += "?by_country=" + temp_coutrey + "&per_page=100";
+        else if (temp_search != "")
+            url += "/search?query=" + temp_search + "&per_page=100";
         else if (temp_type != "")
             url += "?by_type=" + temp_type + "&per_page=100";
         auto res = cli.Get(url);
         if (res && res->status == 200) {
             auto json_result = nlohmann::json::parse(res->body);
-            std::cout << json_result.dump(4) << '\n';
+            //std::cout << json_result.dump(4) << '\n';
         
             for (const auto& brewery : json_result) {
                 Brewery b;
@@ -59,11 +63,8 @@ void DownloadThread::operator()(CommonObjects& common) {
         else {
             std::cerr << "Failed to download data.\n";
         }
-        if (temp_type != "") {
-            printf("-----------");
-        }
         std::unique_lock<std::mutex> lock(common.mutex);
-        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != ""; });
+        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_serach != ""; });
 
         if (common.exit_flag)
             return;

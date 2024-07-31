@@ -25,9 +25,9 @@ struct CommonObjects
     std::atomic_bool data_ready = false;
     std::condition_variable cv;
     std::mutex mutex;
-    std::string url;
     std::vector<Brewery> breweries;
     Brewery* current_brewery = nullptr; // Pointer to the currently selected brewery
     std::string current_type = "";
     std::string current_countries = "";
+    std::string current_serach = "";
 };
