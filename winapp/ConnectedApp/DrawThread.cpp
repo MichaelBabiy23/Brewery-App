@@ -99,18 +99,6 @@ void DrawAppWindow(void* common_ptr)
         ImGui::EndMenuBar();
     }
 
-    /* Close button at top right
-    //ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 8)); 
-    //ImVec4 closeButtonColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color
-    //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));  // Red button
-    //ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-    if (ImGui::Button("X", ImVec2(30, 30))) {
-        PostQuitMessage(0); // This will trigger the WM_DESTROY message
-        common->exit_flag = true;
-    }
-    ImGui::PopStyleColor(2);
-*/
-
     // Display a welcome text
     ImGui::Text("Welcome to our brewery data base :)");
 
@@ -214,7 +202,7 @@ void DrawAppWindow(void* common_ptr)
 
     ImGui::PopStyleColor(4);
 
-    if (common->data_ready)
+    if (common->data_ready and common->breweries.size() > 0)
     {
         ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.7f, 0.7f, 0.2f, 1.00f));
         if (ImGui::BeginTable("Breweries", 5, ImGuiTableFlags_SizingStretchProp)) {
@@ -235,7 +223,7 @@ void DrawAppWindow(void* common_ptr)
             for (size_t i = 0; i < common->breweries.size(); ++i)
             {
                 const auto& brewery = common->breweries[i];
-                
+
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", brewery.name.c_str());
@@ -253,7 +241,7 @@ void DrawAppWindow(void* common_ptr)
                 {
                     ImGui::TableNextRow(); // Move to next row for details
                     ImGui::TableSetColumnIndex(0); // Choose the first column for your details
-                    
+
 
                     ImGui::Text("State: %s", brewery.state.c_str());
                     ImGui::Text("City: %s", brewery.city.c_str());
@@ -261,7 +249,7 @@ void DrawAppWindow(void* common_ptr)
                     ImGui::Text("Postal Code: %s", brewery.postal_code.c_str());
                     ImGui::Text("Phone: %s", brewery.phone.c_str());
                     ImGui::Text("Website: %s", brewery.website_url.c_str());
-                
+
                     DrawThread::black_line();
 
                 }
