@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include "../../shared/ImGuiSrc/imgui.h"
 #include <iostream>
+#include "Favorites.h"
 
 #define input_length 50
 void DrawAppWindow(void* common_ptr)
@@ -189,6 +190,14 @@ void DrawAppWindow(void* common_ptr)
         }
         ImGui::EndCombo();
     }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Favorites")) {
+        auto favorites = getFavorites();
+        common->breweries = favorites;
+        common->data_ready = true;
+    }
+
     ImGui::SameLine();
     if (ImGui::Button("Reset")) {
         std::lock_guard<std::mutex> lock_gurd(common->mutex);
@@ -201,18 +210,20 @@ void DrawAppWindow(void* common_ptr)
         common->cv.notify_one();
     }
 
+
+
     ImGui::PopStyleColor(4);
 
     if (common->data_ready)
     {
         ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.7f, 0.7f, 0.2f, 1.00f));
-        if (ImGui::BeginTable("Breweries", 4, ImGuiTableFlags_SizingStretchProp))
-        {
+        if (ImGui::BeginTable("Breweries", 5, ImGuiTableFlags_SizingStretchProp)) {
             // Setting up table columns
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Country", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Details", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Favorite", ImGuiTableColumnFlags_WidthStretch);
 
             ImGui::TableHeadersRow();
 
@@ -253,6 +264,12 @@ void DrawAppWindow(void* common_ptr)
                 
                     DrawThread::black_line();
 
+                }
+
+                ImGui::TableSetColumnIndex(4);
+                bool favorite = isFavorite(brewery.id);
+                if (ImGui::Checkbox(("##favorite" + std::to_string(i)).c_str(), &favorite)) {
+                    toggleFavorite(brewery);
                 }
             }
             ImGui::EndTable();
