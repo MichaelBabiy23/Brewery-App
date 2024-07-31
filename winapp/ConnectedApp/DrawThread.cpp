@@ -30,12 +30,12 @@ void DrawAppWindow(void* common_ptr) {
     ImGui::SetWindowPos(ImVec2(0, 0));
     ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
 
-    //static const int bubbleCount = 100;  // Modify as needed
-    //BubbleManager bubbleManager(bubbleCount, ImGui::GetIO().DisplaySize); // Create an instance of BubbleManager
-    //bubbleManager.Update(ImGui::GetIO().DeltaTime, ImGui::GetIO().DisplaySize);
-    //ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    //bubbleManager.Draw(draw_list);
-
+    static const int bubbleCount = 100;  // Modify as needed
+    BubbleManager bubbleManager(bubbleCount, ImGui::GetIO().DisplaySize); // Create an instance of BubbleManager
+    bubbleManager.Update(ImGui::GetIO().DeltaTime, ImGui::GetIO().DisplaySize);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    bubbleManager.Draw(draw_list);
+    
     DrawMenuBar(common);
     DisplayWelcomeText();
     DrawInputControls(common, type_currentItem, country_currentItem);
@@ -239,6 +239,7 @@ void DrawBreweryTable(CommonObjects* common) {
             }
             ImGui::EndTable();
         }
+        ImGui::PopStyleColor();
     }
     else {
         DisplayNoDataMessage();

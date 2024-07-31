@@ -41,9 +41,7 @@ void DownloadThread::operator()(CommonObjects& common) {
             auto response = cli.Get(url);
             if (response && response->status == 200) {
                 auto json_result = nlohmann::json::parse(response->body);
-
-                std::cout << json_result.dump(4) << '\n';
-
+                //std::cout << json_result.dump(4) << '\n';
                 ParseAndStoreBreweries(response->body, common);
                 common.data_ready = true;
             }
@@ -79,7 +77,7 @@ std::string DownloadThread::GenerateUrl(const std::string& country, const std::s
 
 void DownloadThread::ParseAndStoreBreweries(const std::string& body, CommonObjects& common) {
     auto json_result = nlohmann::json::parse(body);
-    std::cout << json_result.dump(4) << '\n';
+    //std::cout << json_result.dump(4) << '\n';
 
     for (const auto& brewery : json_result) {
         Brewery b;
