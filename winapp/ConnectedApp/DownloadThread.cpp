@@ -31,13 +31,13 @@ void DownloadThread::operator()(CommonObjects& common) {
         }
         std::string url = "/breweries";
         if (temp_coutrey != "")
-            url += "?by_country=" + temp_coutrey +  "&per_page=10";
+            url += "?by_country=" + temp_coutrey +  "&per_page=100";
         else if (temp_type != "")
-            url += "?by_type=" + temp_type + "&per_page=10";
+            url += "?by_type=" + temp_type + "&per_page=100";
         auto res = cli.Get(url);
         if (res && res->status == 200) {
             auto json_result = nlohmann::json::parse(res->body);
-            // std::cout << json_result.dump(4) << '\n';
+            std::cout << json_result.dump(4) << '\n';
         
             for (const auto& brewery : json_result) {
                 Brewery b;
@@ -58,6 +58,9 @@ void DownloadThread::operator()(CommonObjects& common) {
         }
         else {
             std::cerr << "Failed to download data.\n";
+        }
+        if (temp_type != "") {
+            printf("-----------");
         }
         std::unique_lock<std::mutex> lock(common.mutex);
         common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != ""; });

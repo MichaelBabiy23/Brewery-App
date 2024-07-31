@@ -7,6 +7,7 @@
 #define input_length 50
 void DrawAppWindow(void* common_ptr)
 {
+
     auto common = (CommonObjects*)common_ptr;
 
     if (common->exit_flag)
@@ -16,17 +17,16 @@ void DrawAppWindow(void* common_ptr)
     static int country_currentItem = -1;
 
     const char* type_options[] = {
-    "micro",
-    "brewery",
-    "nano",
-    "regiona",
-    "brewpub",
-    "large",
-    "planning",
-    "bar",
-    "contract",
-    "proprietor",
-    "closed"
+        "micro",
+        "nano",
+        "regional",
+        "brewpub",
+        "large",
+        "planning",
+        "bar",
+        "contract",
+        "proprietor",
+        "closed"
     };
 
     const char* country_options[] = {
@@ -163,11 +163,16 @@ void DrawAppWindow(void* common_ptr)
             ImGui::TableHeadersRow();
 
             // Loop through breweries and display each one
+
+            static std::vector<bool> expanded(common->breweries.size(), false);
+            expanded.resize(common->breweries.size(), false);
+
             for (size_t i = 0; i < common->breweries.size(); ++i)
             {
                 const auto& brewery = common->breweries[i];
-                static std::vector<bool> expanded(common->breweries.size(), false);
+                
 
+                std::cout << brewery.name << brewery.brewery_type << brewery.country << "\n";
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", brewery.name.c_str());
@@ -196,7 +201,8 @@ void DrawAppWindow(void* common_ptr)
                 
                     DrawThread::black_line();
 
-                }   
+                }
+                std::cout << i << common->breweries.size() << "\n";
             }
             ImGui::EndTable();
         }
@@ -209,6 +215,7 @@ void DrawAppWindow(void* common_ptr)
 
     // End the ImGui window
     ImGui::End();
+    printf("666666666666666666\n");
 
     // Pop style changes
     ImGui::PopStyleVar(4);
