@@ -81,12 +81,20 @@ void DrawAppWindow(void* common_ptr)
         // Right-side position
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 67);
 
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
+
         // Add the button to the menu bar
         if (ImGui::Button("X"))
         {
             common->exit_flag = true;
-            ::PostQuitMessage(0);
+            PostQuitMessage(0);
+            common->cv.notify_one();
         }
+
+        ImGui::PopStyleColor(2);
+
+
         ImGui::EndMenuBar();
     }
 
@@ -204,7 +212,7 @@ void DrawAppWindow(void* common_ptr)
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Country", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Details", ImGuiTableColumnFlags_WidthStretch); // Button column
+            ImGui::TableSetupColumn("Details", ImGuiTableColumnFlags_WidthStretch);
 
             ImGui::TableHeadersRow();
 
