@@ -18,52 +18,41 @@ void DownloadThread::operator()(CommonObjects& common) {
     }
 
     httplib::Client cli(_download_url.c_str());
-    std::string temp_coutrey;
-    std::string temp_search;
-    std::string temp_type;
+
+
     while (true) {
+        std::string country, search, type;
+        // Retrieve the current parameters in a thread-safe manner
         {
             std::lock_guard<std::mutex> lock_gurd(common.mutex);
-            temp_coutrey = common.current_countries;
-            temp_search = common.current_serach;
-            temp_type = common.current_type;
+            country = common.current_countries;
+            search = common.current_serach;
+            type = common.current_type;
             common.current_countries = "";
             common.current_type = "";
             common.current_serach = "";
             common.reset = false;
         }
-        std::string url = "/breweries";
-        if (temp_coutrey != "")
-            url += "?by_country=" + temp_coutrey + "&per_page=100";
-        else if (temp_search != "")
-            url += "/search?query=" + temp_search + "&per_page=100";
-        else if (temp_type != "")
-            url += "?by_type=" + temp_type + "&per_page=100";
-        auto res = cli.Get(url);
-        if (res && res->status == 200) {
-            auto json_result = nlohmann::json::parse(res->body);
-            //std::cout << json_result.dump(4) << '\n';
-        
-            for (const auto& brewery : json_result) {
-                Brewery b;
-                b.id = brewery.contains("id") && !brewery["id"].is_null() ? brewery["id"].get<std::string>() : "";
-                b.name = brewery.contains("name") && !brewery["name"].is_null() ? brewery["name"].get<std::string>() : "";
-                b.brewery_type = brewery.contains("brewery_type") && !brewery["brewery_type"].is_null() ? brewery["brewery_type"].get<std::string>() : "";
-                b.street = brewery.contains("street") && !brewery["street"].is_null() ? brewery["street"].get<std::string>() : "";
-                b.city = brewery.contains("city") && !brewery["city"].is_null() ? brewery["city"].get<std::string>() : "";
-                b.state = brewery.contains("state") && !brewery["state"].is_null() ? brewery["state"].get<std::string>() : "";
-                b.postal_code = brewery.contains("postal_code") && !brewery["postal_code"].is_null() ? brewery["postal_code"].get<std::string>() : "";
-                b.country = brewery.contains("country") && !brewery["country"].is_null() ? brewery["country"].get<std::string>() : "";
-                b.phone = brewery.contains("phone") && !brewery["phone"].is_null() ? brewery["phone"].get<std::string>() : "";
-                b.website_url = brewery.contains("website_url") && !brewery["website_url"].is_null() ? brewery["website_url"].get<std::string>() : "";
 
-                common.breweries.push_back(b);
+        // Generate the request URL
+        std::string url = GenerateUrl(country, search, type);
+        if (!url.empty()) {
+
+            auto response = cli.Get(url);
+            if (response && response->status == 200) {
+                auto json_result = nlohmann::json::parse(response->body);
+
+                std::cout << json_result.dump(4) << '\n';
+
+                ParseAndStoreBreweries(response->body, common);
+                common.data_ready = true;
             }
-            common.data_ready = true;
+            else {
+                std::cerr << "Failed to download data.\n";
+            }
         }
-        else {
-            std::cerr << "Failed to download data.\n";
-        }
+
+        // Wait for further instructions
         std::unique_lock<std::mutex> lock(common.mutex);
         common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_serach != "" || common.reset; });
 
@@ -71,10 +60,50 @@ void DownloadThread::operator()(CommonObjects& common) {
             return;
 
         common.data_ready = false;
-
-        lock.unlock();
     }
+}
 
+std::string DownloadThread::GenerateUrl(const std::string& country, const std::string& search, const std::string& type) {
+    std::string url = "/breweries";
+    if (!country.empty()) {
+        return url + "?by_country=" + country + "&per_page=100";
+    }
+    else if (!search.empty()) {
+        return url + "/search?query=" + search + "&per_page=100";
+    }
+    else if (!type.empty()) {
+        return url + "?by_type=" + type + "&per_page=100";
+    }
+    return url;
+}
+
+void DownloadThread::ParseAndStoreBreweries(const std::string& body, CommonObjects& common) {
+    auto json_result = nlohmann::json::parse(body);
+    std::cout << json_result.dump(4) << '\n';
+
+    for (const auto& brewery : json_result) {
+        Brewery b;
+
+        // Use a helper function to extract the values safely
+        b.id = GetBreweryField(brewery, "id");
+        b.name = GetBreweryField(brewery, "name");
+        b.brewery_type = GetBreweryField(brewery, "brewery_type");
+        b.street = GetBreweryField(brewery, "street");
+        b.city = GetBreweryField(brewery, "city");
+        b.state = GetBreweryField(brewery, "state");
+        b.postal_code = GetBreweryField(brewery, "postal_code");
+        b.country = GetBreweryField(brewery, "country");
+        b.phone = GetBreweryField(brewery, "phone");
+        b.website_url = GetBreweryField(brewery, "website_url");
+
+        common.breweries.push_back(b);
+    }
+}
+
+std::string DownloadThread::GetBreweryField(const auto brewery, const std::string& field_name) {
+    return brewery.contains(field_name) && !brewery[field_name].is_null()
+        ? brewery[field_name].get<std::string>()
+        : "";
 }
 
 void DownloadThread::SetUrl(const std::string& new_url) {
