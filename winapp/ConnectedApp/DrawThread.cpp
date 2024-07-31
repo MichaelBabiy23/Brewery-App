@@ -201,6 +201,7 @@ void DrawBreweryTable(CommonObjects* common) {
             ImGui::TableHeadersRow();
 
             static std::vector<bool> expanded(common->breweries.size(), false);
+            expanded.resize(common->breweries.size(), false);
 
             for (size_t i = 0; i < common->breweries.size(); ++i) {
                 const auto& brewery = common->breweries[i];
