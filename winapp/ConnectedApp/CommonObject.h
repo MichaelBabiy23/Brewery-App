@@ -30,4 +30,5 @@ struct CommonObjects
     std::string current_type = "";
     std::string current_countries = "";
     std::string current_serach = "";
+    bool reset = false;
 };

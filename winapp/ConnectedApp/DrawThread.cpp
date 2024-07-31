@@ -63,18 +63,44 @@ void DrawAppWindow(void* common_ptr)
 
     // Begin full screen window
     ImGui::Begin("Brewery Information", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+    ImGui::SetWindowPos(ImVec2(0, 0));
     ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
+    if (ImGui::BeginMenuBar())
+    {
 
-    // Close button at top right
-    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 30)); 
+        // Center title
+        float windowWidth = ImGui::GetWindowWidth();
+        float textWidth = ImGui::CalcTextSize("Brewery Searcher").x;
+        float centerPos = (windowWidth - textWidth) * 0.5f;
+
+        ImGui::SetCursorPosX(centerPos);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 0.76f, 0.76f));
+        ImGui::Text("Brewery Searcher");
+        ImGui::PopStyleColor();
+
+        // Right-side position
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 67);
+
+        // Add the button to the menu bar
+        if (ImGui::Button("X"))
+        {
+            common->exit_flag = true;
+            ::PostQuitMessage(0);
+        }
+        ImGui::EndMenuBar();
+    }
+
+    /* Close button at top right
+    //ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - 50, 8)); 
     //ImVec4 closeButtonColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));  // Red button
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+    //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));  // Red button
+    //ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
     if (ImGui::Button("X", ImVec2(30, 30))) {
         PostQuitMessage(0); // This will trigger the WM_DESTROY message
         common->exit_flag = true;
     }
     ImGui::PopStyleColor(2);
+*/
 
     // Display a welcome text
     ImGui::Text("Welcome to our brewery data base :)");
@@ -92,7 +118,6 @@ void DrawAppWindow(void* common_ptr)
     if (ImGui::Button("Search")) {
         std::lock_guard<std::mutex> lock_gurd(common->mutex);
         common->current_serach = buff;
-        std::cout << common->current_serach;
         common->current_countries = "";
         common->current_type = "";
         common->breweries.clear();
@@ -156,6 +181,18 @@ void DrawAppWindow(void* common_ptr)
         }
         ImGui::EndCombo();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+        std::lock_guard<std::mutex> lock_gurd(common->mutex);
+        buff[0] = '\0';
+        common->current_countries = "";
+        common->current_serach = "";
+        common->current_type = "";
+        common->breweries.clear();
+        common->reset = true;
+        common->cv.notify_one();
+    }
+
     ImGui::PopStyleColor(4);
 
     if (common->data_ready)

@@ -30,6 +30,7 @@ void DownloadThread::operator()(CommonObjects& common) {
             common.current_countries = "";
             common.current_type = "";
             common.current_serach = "";
+            common.reset = false;
         }
         std::string url = "/breweries";
         if (temp_coutrey != "")
@@ -64,7 +65,7 @@ void DownloadThread::operator()(CommonObjects& common) {
             std::cerr << "Failed to download data.\n";
         }
         std::unique_lock<std::mutex> lock(common.mutex);
-        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_serach != ""; });
+        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_serach != "" || common.reset; });
 
         if (common.exit_flag)
             return;
