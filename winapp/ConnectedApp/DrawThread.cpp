@@ -15,6 +15,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
 void DrawBreweryTable(CommonObjects* common);
 void DisplayNoDataMessage();
 
+BubbleManager bubbleManager(100, ImVec2(1920, 1080));
 
 // Drawing the main application window
 void DrawAppWindow(void* common_ptr) {
@@ -28,14 +29,13 @@ void DrawAppWindow(void* common_ptr) {
     SetupImGuiStyle();
     ImGui::Begin("Brewery Information", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
     ImGui::SetWindowPos(ImVec2(0, 0));
-    ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
 
-    static const int bubbleCount = 100;  // Modify as needed
-    BubbleManager bubbleManager(bubbleCount, ImGui::GetIO().DisplaySize); // Create an instance of BubbleManager
     bubbleManager.Update(ImGui::GetIO().DeltaTime, ImGui::GetIO().DisplaySize);
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     bubbleManager.Draw(draw_list);
-    
+
+    ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
+
     DrawMenuBar(common);
     DisplayWelcomeText();
     DrawInputControls(common, type_currentItem, country_currentItem);
