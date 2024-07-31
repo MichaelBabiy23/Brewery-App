@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bubble.cpp" />
     <ClCompile Include="ConnectedApp.cpp" />
     <ClCompile Include="DownloadThread.cpp" />
     <ClCompile Include="DrawThread.cpp" />
@@ -147,6 +148,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bubble.h" />
     <ClInclude Include="CommonObject.h" />
     <ClInclude Include="DownloadThread.h" />
     <ClInclude Include="DrawThread.h" />

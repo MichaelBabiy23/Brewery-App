@@ -3,11 +3,15 @@
 #include <Windows.h>
 #include "../../shared/ImGuiSrc/imgui.h"
 #include <iostream>
+#include <vector>
 #include "Favorites.h"
+#include "Bubble.h"
+
 
 #define input_length 50
-void DrawAppWindow(void* common_ptr)
-{
+
+
+void DrawAppWindow(void* common_ptr) {
     auto common = (CommonObjects*)common_ptr;
 
     if (common->exit_flag)
@@ -17,30 +21,13 @@ void DrawAppWindow(void* common_ptr)
     static int country_currentItem = -1;
 
     const char* type_options[] = {
-        "micro",
-        "nano",
-        "regional",
-        "brewpub",
-        "large",
-        "planning",
-        "bar",
-        "contract",
-        "proprietor",
-        "closed"
+        "micro", "nano", "regional", "brewpub", "large", "planning",
+        "bar", "contract", "proprietor", "closed"
     };
 
     const char* country_options[] = {
-        "Austria",
-        "England",
-        "France",
-        "Isle of Man",
-        "Ireland",
-        "Poland",
-        "Portugal",
-        "Scotland",
-        "Singapore",
-        "South Korea",
-        "United States"
+        "Austria", "England", "France", "Isle of Man", "Ireland",
+        "Poland", "Portugal", "Scotland", "Singapore", "South Korea", "United States"
     };
 
     // Set custom colors and style for a brewery theme
@@ -61,14 +48,17 @@ void DrawAppWindow(void* common_ptr)
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 5));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f); // Rounded frames for a cozy feel
 
-
     // Begin full screen window
     ImGui::Begin("Brewery Information", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
     ImGui::SetWindowPos(ImVec2(0, 0));
     ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
-    if (ImGui::BeginMenuBar())
-    {
 
+    // Update and draw bubbles in the background
+    bubbleManager.Update(ImGui::GetIO().DeltaTime, ImGui::GetIO().DisplaySize);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    bubbleManager.Draw(draw_list);
+
+    if (ImGui::BeginMenuBar()) {
         // Center title
         float windowWidth = ImGui::GetWindowWidth();
         float textWidth = ImGui::CalcTextSize("Brewery Searcher").x;
@@ -86,15 +76,13 @@ void DrawAppWindow(void* common_ptr)
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
 
         // Add the button to the menu bar
-        if (ImGui::Button("X"))
-        {
+        if (ImGui::Button("X")) {
             common->exit_flag = true;
             PostQuitMessage(0);
             common->cv.notify_one();
         }
 
         ImGui::PopStyleColor(2);
-
 
         ImGui::EndMenuBar();
     }
@@ -120,16 +108,13 @@ void DrawAppWindow(void* common_ptr)
         common->breweries.clear();
         common->cv.notify_one();
     }
-        
+
     ImGui::SameLine();
     ImGui::SetNextItemWidth(170);
-    if (ImGui::BeginCombo("##Select Type", type_currentItem >= 0 ? type_options[type_currentItem] : "Types"))
-    {
-        for (int i = 0; i < IM_ARRAYSIZE(type_options); i++)
-        {
+    if (ImGui::BeginCombo("##Select Type", type_currentItem >= 0 ? type_options[type_currentItem] : "Types")) {
+        for (int i = 0; i < IM_ARRAYSIZE(type_options); i++) {
             bool isSelected = (type_currentItem == i);
-            if (ImGui::Selectable(type_options[i], isSelected))
-            {
+            if (ImGui::Selectable(type_options[i], isSelected)) {
                 {
                     std::lock_guard<std::mutex> lock_gurd(common->mutex);
                     type_currentItem = i;
@@ -142,8 +127,7 @@ void DrawAppWindow(void* common_ptr)
                 }
             }
             // Set the initial focus when opening the combo (e.g. first item)
-            if (isSelected)
-            {
+            if (isSelected) {
                 ImGui::SetItemDefaultFocus();
             }
         }
@@ -151,13 +135,10 @@ void DrawAppWindow(void* common_ptr)
     }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(170);
-    if (ImGui::BeginCombo("##Select ", country_currentItem >= 0 ? country_options[country_currentItem] : "Countries"))
-    {
-        for (int i = 0; i < IM_ARRAYSIZE(country_options); i++)
-        {
+    if (ImGui::BeginCombo("##Select ", country_currentItem >= 0 ? country_options[country_currentItem] : "Countries")) {
+        for (int i = 0; i < IM_ARRAYSIZE(country_options); i++) {
             bool isSelected = (country_currentItem == i);
-            if (ImGui::Selectable(country_options[i], isSelected))
-            {
+            if (ImGui::Selectable(country_options[i], isSelected)) {
                 {
                     std::lock_guard<std::mutex> lock_gurd(common->mutex);
                     country_currentItem = i;
@@ -168,11 +149,9 @@ void DrawAppWindow(void* common_ptr)
                     common->breweries.clear();
                     common->cv.notify_one();
                 }
-
             }
             // Set the initial focus when opening the combo (e.g. first item)
-            if (isSelected)
-            {
+            if (isSelected) {
                 ImGui::SetItemDefaultFocus();
             }
         }
@@ -198,12 +177,9 @@ void DrawAppWindow(void* common_ptr)
         common->cv.notify_one();
     }
 
-
-
     ImGui::PopStyleColor(4);
 
-    if (common->data_ready and common->breweries.size() > 0)
-    {
+    if (common->data_ready and common->breweries.size() > 0) {
         ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.7f, 0.7f, 0.2f, 1.00f));
         if (ImGui::BeginTable("Breweries", 5, ImGuiTableFlags_SizingStretchProp)) {
             // Setting up table columns
@@ -216,12 +192,10 @@ void DrawAppWindow(void* common_ptr)
             ImGui::TableHeadersRow();
 
             // Loop through breweries and display each one
-
             static std::vector<bool> expanded(common->breweries.size(), false);
             expanded.resize(common->breweries.size(), false);
 
-            for (size_t i = 0; i < common->breweries.size(); ++i)
-            {
+            for (size_t i = 0; i < common->breweries.size(); ++i) {
                 const auto& brewery = common->breweries[i];
 
                 ImGui::TableNextRow();
@@ -233,15 +207,12 @@ void DrawAppWindow(void* common_ptr)
                 ImGui::Text("%s", brewery.country.c_str());
 
                 ImGui::TableSetColumnIndex(3);
-                if (ImGui::Button(("Show##" + std::to_string(i)).c_str()))
-                {
+                if (ImGui::Button(("Show##" + std::to_string(i)).c_str())) {
                     expanded[i] = !expanded[i]; // Toggle the expanded state
                 }
-                if (expanded[i])
-                {
+                if (expanded[i]) {
                     ImGui::TableNextRow(); // Move to next row for details
                     ImGui::TableSetColumnIndex(0); // Choose the first column for your details
-
 
                     ImGui::Text("State: %s", brewery.state.c_str());
                     ImGui::Text("City: %s", brewery.city.c_str());
@@ -251,7 +222,6 @@ void DrawAppWindow(void* common_ptr)
                     ImGui::Text("Website: %s", brewery.website_url.c_str());
 
                     DrawThread::black_line();
-
                 }
 
                 ImGui::TableSetColumnIndex(4);
@@ -264,8 +234,7 @@ void DrawAppWindow(void* common_ptr)
         }
         ImGui::PopStyleColor(1);
     }
-    else
-    {
+    else {
         ImGui::Text("No data available or data is not ready.");
     }
 
@@ -277,8 +246,7 @@ void DrawAppWindow(void* common_ptr)
     ImGui::PopStyleColor(8);
 }
 
-void DrawThread::operator()(CommonObjects& common)
-{
+void DrawThread::operator()(CommonObjects& common) {
     GuiMain(DrawAppWindow, &common);
     common.exit_flag = true;
 }
@@ -304,5 +272,4 @@ void DrawThread::black_line() {
 
     // Adding Padding
     ImGui::Dummy(ImVec2(0, 10)); // Dummy space for padding
-
 }
