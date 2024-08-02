@@ -83,7 +83,3 @@ Icon?
 ##############################
 Thumbs.db
 Desktop.ini
-
-# Ignore specific directories
-#############################
-bin/.*    # Ignore hidden files in bin
