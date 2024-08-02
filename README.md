@@ -168,8 +168,6 @@ The `main` function initializes the application and starts the main threads for 
     - Main thread terminates
 
 ### Workflow Diagram
-
-'''
 +--------------------------+
 |       Main Thread        |
 +--------------------------+
@@ -179,32 +177,31 @@ The `main` function initializes the application and starts the main threads for 
 |  Seed Random Generator   |
 |  Set URL for Download    |
 |                          |
-| Start draw_th Thread     | --------------------+
-| Start down_th Thread     | ----------------+   |
-|                          |                 |   |
-| Wait for down_th to join |                 |   |
-| Wait for draw_th to join |                 |   |
-|                          |                 |   |
-+--------------------------+                 |   |
-                                             |   |
-                    +------------------------|   |
-                    |   draw_th Thread       |   |
-                    +------------------------+   |
-                    | DrawThread::operator() |   |
-                    |  -> GuiMain            |   |
-                    |  -> Set exit_flag true |   |
-                    +------------------------+   |
-                                                 |
-                     +------------------------+--|
-                     |   down_th Thread       |  |
-                     +------------------------+--|
-                     | DownloadThread::operator()|
-                     |  -> Download Data         |
-                     |  -> Process Data          |
-                     |  -> Update CommonObjects  |
-                     |  -> Notify via cv         |
-                     +------------------------+--+
- '''
+| Start draw_th Thread     | ---------------------+
+| Start down_th Thread     | ------------------+  |
+|                          |                  |  |
+| Wait for down_th to join |                  |  |
+| Wait for draw_th to join |                  |  |
+|                          |                  |  |
++--------------------------+                  |  |
+                                             |  |
+                    +----------------------- |  |
+                    |   draw_th Thread       |  |
+                    +------------------------+  |
+                    | DrawThread::operator() |  |
+                    |  -> GuiMain            |  |
+                    |  -> Set exit_flag true |  |
+                    +------------------------+  |
+                                             |  |
+                    +------------------------+  |
+                    |   down_th Thread       |  |
+                    +------------------------+  |
+                    | DownloadThread::operator()|
+                    |  -> Download Data       |
+                    |  -> Process Data        |
+                    |  -> Update CommonObjects|
+                    |  -> Notify via cv       |
+                    +------------------------+
 
 ### Description of Workflow Steps
 
