@@ -135,3 +135,88 @@ The `main` function initializes the application and starts the main threads for 
 - **httplib**: Used for making HTTP requests to fetch brewery data.
 - **nlohmann/json**: Used for parsing JSON responses from the API.
 - **Windows API**: Used for handling window-specific functions and types.
+
+
+### Workflow Schema
+
+1. **Initialization (Main Thread)**
+    - Initialize `CommonObjects`
+    - Initialize `DrawThread`
+    - Initialize `DownloadThread`
+    - Seed the random number generator
+    - Set the URL for `DownloadThread`
+
+2. **Start Threads**
+    - Start `draw_th` thread for drawing
+    - Start `down_th` thread for downloading
+
+3. **Draw Thread (`draw_th`)**
+    - Call `DrawThread::operator()(CommonObjects& common)`
+        - Invoke `GuiMain` with `DrawAppWindow` and `common`
+        - Set `common.exit_flag` to true upon completion
+
+4. **Download Thread (`down_th`)**
+    - Call `DownloadThread::operator()(CommonObjects& common)`
+        - Download data from the specified URL
+        - Process and update `common` with downloaded data
+        - Notify any waiting threads via `common.cv`
+
+5. **Synchronization and Completion**
+    - Main thread waits (`join()`) for `down_th` to complete
+    - Main thread waits (`join()`) for `draw_th` to complete
+    - Both threads complete execution and join back to the main thread
+    - Main thread terminates
+
+### Workflow Diagram
+
++--------------------------+
+|       Main Thread        |
++--------------------------+
+|  Initialize CommonObjects|
+|  Initialize DrawThread   |
+|  Initialize DownloadThread|
+|  Seed Random Generator   |
+|  Set URL for Download    |
+|                          |
+| Start draw_th Thread     | --------------------+
+| Start down_th Thread     | ----------------+   |
+|                          |                 |   |
+| Wait for down_th to join |                 |   |
+| Wait for draw_th to join |                 |   |
+|                          |                 |   |
++--------------------------+                 |   |
+                                             |   |
+                    +------------------------|   |
+                    |   draw_th Thread       |   |
+                    +------------------------+   |
+                    | DrawThread::operator() |   |
+                    |  -> GuiMain            |   |
+                    |  -> Set exit_flag true |   |
+                    +------------------------+   |
+                                                 |
+                     +------------------------+--|
+                     |   down_th Thread       |  |
+                     +------------------------+--|
+                     | DownloadThread::operator()|
+                     |  -> Download Data         |
+                     |  -> Process Data          |
+                     |  -> Update CommonObjects  |
+                     |  -> Notify via cv         |
+                     +------------------------+--+
+
+### Description of Workflow Steps
+
+1. **Initialization**
+   - Common objects and threads are initialized. The random generator is seeded for randomness, and the URL for downloading is set.
+
+2. **Start Threads**
+   - Two threads (`draw_th` and `down_th`) are started. `draw_th` handles drawing operations, while `down_th` handles downloading data from a specified URL.
+
+3. **Draw Thread (`draw_th`)**
+   - Executes `DrawThread::operator()`, which calls `GuiMain` with `DrawAppWindow` and `common` as parameters. The drawing operations are performed here, and the `exit_flag` is set to true upon completion.
+
+4. **Download Thread (`down_th`)**
+   - Executes `DownloadThread::operator()`, which downloads data from the URL, processes it, updates the `common` object, and notifies any waiting threads via the condition variable (`cv`).
+
+5. **Synchronization and Completion**
+   - The main thread waits for both `draw_th` and `down_th` to complete using `join()`. Once both threads have completed their operations and joined back to the main thread, the program terminates.

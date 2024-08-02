@@ -27,6 +27,14 @@ void DisplayNoDataMessage();
 // Instantiate the BubbleManager with 100 bubbles and a screen size of 1920x1080
 BubbleManager bubbleManager(100, ImVec2(1920, 1080));
 
+// Function to handle drawing in a separate thread
+void DrawThread::operator()(CommonObjects& common) {
+    // Start the GUI main loop with the DrawAppWindow function and the common object
+    GuiMain(&DrawAppWindow, &common);
+    // Set the exit flag to true when the main loop exits
+    common.exit_flag = true;
+}
+
 // Drawing the main application window
 void DrawAppWindow(void* common_ptr) {
     auto common = (CommonObjects*)common_ptr;
@@ -283,14 +291,6 @@ void DrawBreweryTable(CommonObjects* common) {
 // Display message if no data is available
 void DisplayNoDataMessage() {
     ImGui::Text("No data available or data is not ready.");
-}
-
-// Function to handle drawing in a separate thread
-void DrawThread::operator()(CommonObjects& common) {
-    // Start the GUI main loop with the DrawAppWindow function and the common object
-    GuiMain(&DrawAppWindow, &common);
-    // Set the exit flag to true when the main loop exits
-    common.exit_flag = true;
 }
 
 // Function to draw a black line as a separator
