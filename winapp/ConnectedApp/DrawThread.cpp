@@ -91,6 +91,9 @@ void DrawMenuBar(CommonObjects* common) {
         ImGui::Text("Brewery Searcher");
         ImGui::PopStyleColor();
 
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
+
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 67);
         if (ImGui::Button("X")) {
             // Set the exit flag to true and notify the condition variable
@@ -98,6 +101,8 @@ void DrawMenuBar(CommonObjects* common) {
             PostQuitMessage(0);
             common->cv.notify_one(); // Notify one waiting thread
         }
+
+        ImGui::PopStyleColor(2);
 
         ImGui::EndMenuBar();
     }
@@ -135,6 +140,9 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         common->breweries.clear();
         common->cv.notify_one(); // Notify one waiting thread
     }
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.3f, 0.4f, 0.5f, 1.0f));  // Hovered background color
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));            // Text color
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(170);
@@ -186,6 +194,8 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         ImGui::EndCombo();
     }
 
+    ImGui::PopStyleColor(2);
+
     ImGui::SameLine();
     if (ImGui::Button("Favorites")) {
         auto favorites = getFavorites();
@@ -205,6 +215,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         type_currentItem = -1;
         country_currentItem = -1;
         common->breweries.clear();
+        common->reset = true;
         common->cv.notify_one(); // Notify one waiting thread
     }
 }
