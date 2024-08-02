@@ -56,5 +56,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="README" />
   </ItemGroup>
 </Project>
