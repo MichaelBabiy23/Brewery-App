@@ -30,6 +30,9 @@
     <ClCompile Include="Bubble.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BubbleManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadThread.h">
@@ -47,8 +50,12 @@
     <ClInclude Include="Bubble.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BubbleManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="README" />
   </ItemGroup>
 </Project>

@@ -29,6 +29,6 @@ struct CommonObjects
     Brewery* current_brewery = nullptr; // Pointer to the currently selected brewery
     std::string current_type = "";
     std::string current_countries = "";
-    std::string current_serach = "";
+    std::string current_search = "";
     bool reset = false;
 };

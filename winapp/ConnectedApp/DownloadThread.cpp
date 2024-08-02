@@ -1,82 +1,131 @@
+// Enable OpenSSL support for HTTP client
 #define CPPHTTPLIB_OPENSSL_SUPPORT
+// Include the header for the DownloadThread class
 #include "DownloadThread.h"
+// Include the HTTP client library
 #include "httplib.h"
+// Include the JSON library for parsing and serializing JSON
 #include "nlohmann/json.hpp"
+// Include atomic for atomic operations
 #include <atomic>
+// Include string for string manipulations
 #include <string>
+// Include vector for dynamic array
 #include <vector>
+// Include iostream for input and output stream
 #include <iostream>
+// Include thread for multithreading
 #include <thread>
 
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE macro can be used to simplify JSON serialization/deserialization
+// Define the serialization/deserialization for the Brewery struct
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Brewery, id, name, brewery_type, street, city, state, postal_code, country, phone, website_url)
 
+// This function is the thread's main function, executing the download logic
 void DownloadThread::operator()(CommonObjects& common) {
+    // Check if the download URL is set
     if (_download_url.empty()) {
         std::cerr << "Download URL not set.\n";
         return;
     }
 
+    // Initialize the HTTP client with the download URL
     httplib::Client cli(_download_url.c_str());
-    std::string temp_coutrey;
-    std::string temp_search;
-    std::string temp_type;
+
     while (true) {
+        std::string country, search, type;
+        // Retrieve the current parameters in a thread-safe manner
         {
-            std::lock_guard<std::mutex> lock_gurd(common.mutex);
-            temp_coutrey = common.current_countries;
-            temp_search = common.current_serach;
-            temp_type = common.current_type;
+            std::lock_guard<std::mutex> lock_guard(common.mutex);
+            country = common.current_countries;
+            search = common.current_search;
+            type = common.current_type;
+            // Reset the common object's current parameters
             common.current_countries = "";
             common.current_type = "";
-            common.current_serach = "";
+            common.current_search = "";
             common.reset = false;
         }
-        std::string url = "/breweries";
-        if (temp_coutrey != "")
-            url += "?by_country=" + temp_coutrey + "&per_page=100";
-        else if (temp_search != "")
-            url += "/search?query=" + temp_search + "&per_page=100";
-        else if (temp_type != "")
-            url += "?by_type=" + temp_type + "&per_page=100";
-        auto res = cli.Get(url);
-        if (res && res->status == 200) {
-            auto json_result = nlohmann::json::parse(res->body);
-            //std::cout << json_result.dump(4) << '\n';
-        
-            for (const auto& brewery : json_result) {
-                Brewery b;
-                b.id = brewery.contains("id") && !brewery["id"].is_null() ? brewery["id"].get<std::string>() : "";
-                b.name = brewery.contains("name") && !brewery["name"].is_null() ? brewery["name"].get<std::string>() : "";
-                b.brewery_type = brewery.contains("brewery_type") && !brewery["brewery_type"].is_null() ? brewery["brewery_type"].get<std::string>() : "";
-                b.street = brewery.contains("street") && !brewery["street"].is_null() ? brewery["street"].get<std::string>() : "";
-                b.city = brewery.contains("city") && !brewery["city"].is_null() ? brewery["city"].get<std::string>() : "";
-                b.state = brewery.contains("state") && !brewery["state"].is_null() ? brewery["state"].get<std::string>() : "";
-                b.postal_code = brewery.contains("postal_code") && !brewery["postal_code"].is_null() ? brewery["postal_code"].get<std::string>() : "";
-                b.country = brewery.contains("country") && !brewery["country"].is_null() ? brewery["country"].get<std::string>() : "";
-                b.phone = brewery.contains("phone") && !brewery["phone"].is_null() ? brewery["phone"].get<std::string>() : "";
-                b.website_url = brewery.contains("website_url") && !brewery["website_url"].is_null() ? brewery["website_url"].get<std::string>() : "";
 
-                common.breweries.push_back(b);
+        // Generate the request URL
+        std::string url = GenerateUrl(country, search, type);
+        if (!url.empty()) {
+            // Send the GET request
+            auto response = cli.Get(url);
+            if (response && response->status == 200) {
+                // Parse the JSON response
+                auto json_result = nlohmann::json::parse(response->body);
+                // Parse and store the breweries data
+                ParseAndStoreBreweries(response->body, common);
+                common.data_ready = true;
             }
-            common.data_ready = true;
+            else {
+                std::cerr << "Failed to download data.\n";
+            }
         }
-        else {
-            std::cerr << "Failed to download data.\n";
-        }
-        std::unique_lock<std::mutex> lock(common.mutex);
-        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_serach != "" || common.reset; });
 
+        // Wait for further instructions
+        std::unique_lock<std::mutex> lock(common.mutex);
+        common.cv.wait(lock, [&] { return common.exit_flag || common.current_type != "" || common.current_countries != "" || common.current_search != "" || common.reset; });
+
+        // Exit the loop if the exit flag is set
         if (common.exit_flag)
             return;
 
         common.data_ready = false;
-
-        lock.unlock();
     }
-
 }
 
+// Generate the request URL based on the parameters
+std::string DownloadThread::GenerateUrl(const std::string& country, const std::string& search, const std::string& type) {
+    std::string url = "/breweries";
+    if (!country.empty()) {
+        // Append the country parameter to the URL
+        return url + "?by_country=" + country + "&per_page=100";
+    }
+    else if (!search.empty()) {
+        // Append the search parameter to the URL
+        return url + "/search?query=" + search + "&per_page=100";
+    }
+    else if (!type.empty()) {
+        // Append the type parameter to the URL
+        return url + "?by_type=" + type + "&per_page=100";
+    }
+    return url;
+}
+
+// Parse the JSON response and store the breweries data
+void DownloadThread::ParseAndStoreBreweries(const std::string& body, CommonObjects& common) {
+    auto json_result = nlohmann::json::parse(body);
+
+    // Iterate through each brewery in the JSON array
+    for (const auto& brewery : json_result) {
+        Brewery b;
+
+        // Extract the brewery fields
+        b.id = GetBreweryField(brewery, "id");
+        b.name = GetBreweryField(brewery, "name");
+        b.brewery_type = GetBreweryField(brewery, "brewery_type");
+        b.street = GetBreweryField(brewery, "street");
+        b.city = GetBreweryField(brewery, "city");
+        b.state = GetBreweryField(brewery, "state");
+        b.postal_code = GetBreweryField(brewery, "postal_code");
+        b.country = GetBreweryField(brewery, "country");
+        b.phone = GetBreweryField(brewery, "phone");
+        b.website_url = GetBreweryField(brewery, "website_url");
+
+        // Store the brewery in the common object
+        common.breweries.push_back(b);
+    }
+}
+
+// Safely extract a field from the brewery JSON object
+std::string DownloadThread::GetBreweryField(const auto brewery, const std::string& field_name) {
+    return brewery.contains(field_name) && !brewery[field_name].is_null()
+        ? brewery[field_name].get<std::string>()
+        : "";
+}
+
+// Set the download URL
 void DownloadThread::SetUrl(const std::string& new_url) {
     _download_url = new_url;
 }

@@ -12,6 +12,7 @@ int main() {
     CommonObjects common;
     DrawThread draw;
     DownloadThread down;
+    srand(time(0));
 
     down.SetUrl("https://api.openbrewerydb.org");
 
