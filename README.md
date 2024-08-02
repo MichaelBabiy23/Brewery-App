@@ -169,6 +169,7 @@ The `main` function initializes the application and starts the main threads for 
 
 ### Workflow Diagram
 
+'''
 +--------------------------+
 |       Main Thread        |
 +--------------------------+
@@ -203,6 +204,7 @@ The `main` function initializes the application and starts the main threads for 
                      |  -> Update CommonObjects  |
                      |  -> Notify via cv         |
                      +------------------------+--+
+ '''
 
 ### Description of Workflow Steps
 
