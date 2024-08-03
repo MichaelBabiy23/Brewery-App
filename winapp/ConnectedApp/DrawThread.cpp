@@ -16,15 +16,6 @@
 // Define the length of the input buffer
 #define input_length 50
 
-// Function declarations
-void SetupImGuiStyle();
-void DrawMenuBar(CommonObjects* common);
-void DisplayWelcomeText();
-void DrawInputControls(CommonObjects* common, int& type_currentItem, int& country_currentItem, std::vector<bool>& expanded);
-void DrawBreweryTable(CommonObjects* common, std::vector<bool>& expanded);
-void DisplayNoDataMessage();
-void ResetExpanded(std::vector<bool>& expanded);
-
 // Drawing the main application window
 void DrawAppWindow(void* common_ptr) {
 
@@ -43,6 +34,9 @@ void DrawAppWindow(void* common_ptr) {
 
     // Get the current screen size
     ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+    ImGui::SetWindowSize(screenSize);
+
     // Instantiate the BubbleManager with the dynamic screen size
     static BubbleManager bubbleManager(100, screenSize);
 
@@ -50,10 +44,6 @@ void DrawAppWindow(void* common_ptr) {
     bubbleManager.Update(ImGui::GetIO().DeltaTime, screenSize);
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     bubbleManager.Draw(draw_list);
-
-    ImGui::SetWindowSize(screenSize);
-
-
 
     // Draw the menu bar, welcome text, input controls, and brewery table
     DrawMenuBar(common);
