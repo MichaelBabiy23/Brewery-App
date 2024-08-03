@@ -24,8 +24,6 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
 void DrawBreweryTable(CommonObjects* common);
 void DisplayNoDataMessage();
 
-// Instantiate the BubbleManager with 100 bubbles and a screen size of 1920x1080
-BubbleManager bubbleManager(100, ImVec2(1920, 1080));
 
 // Function to handle drawing in a separate thread
 void DrawThread::operator()(CommonObjects& common) {
@@ -37,6 +35,7 @@ void DrawThread::operator()(CommonObjects& common) {
 
 // Drawing the main application window
 void DrawAppWindow(void* common_ptr) {
+
     auto common = (CommonObjects*)common_ptr;
 
     // If the exit flag is set, return immediately
@@ -50,12 +49,17 @@ void DrawAppWindow(void* common_ptr) {
     ImGui::Begin("Brewery Information", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
     ImGui::SetWindowPos(ImVec2(0, 0));
 
+    // Get the current screen size
+    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+    // Instantiate the BubbleManager with the dynamic screen size
+    static BubbleManager bubbleManager(100, screenSize);
+
     // Update and draw bubbles
-    bubbleManager.Update(ImGui::GetIO().DeltaTime, ImGui::GetIO().DisplaySize);
+    bubbleManager.Update(ImGui::GetIO().DeltaTime, screenSize);
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     bubbleManager.Draw(draw_list);
 
-    ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
+    ImGui::SetWindowSize(screenSize);
 
     // Draw the menu bar, welcome text, input controls, and brewery table
     DrawMenuBar(common);
@@ -165,6 +169,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
                 common->current_type = type_options[type_currentItem];
                 common->current_countries = "";
                 common->current_search = "";
+                buff[0] = '\0';
                 country_currentItem = -1;
                 common->breweries.clear();
                 common->cv.notify_one(); // Notify one waiting thread
@@ -189,6 +194,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
                 country_currentItem = i;
                 common->current_countries = country_options[country_currentItem];
                 common->current_search = "";
+                buff[0] = '\0';
                 common->current_type = "";
                 type_currentItem = -1;
                 common->breweries.clear();
@@ -216,10 +222,10 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         // Lock the mutex to protect shared data
         std::lock_guard<std::mutex> lock_guard(common->mutex);
         // Reset search parameters and notify the condition variable
-        buff[0] = '\0';
         common->current_countries = "";
         common->current_type = "";
         common->current_search = "";
+        buff[0] = '\0';
         type_currentItem = -1;
         country_currentItem = -1;
         common->breweries.clear();
