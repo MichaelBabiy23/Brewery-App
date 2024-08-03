@@ -20,9 +20,10 @@
 void SetupImGuiStyle();
 void DrawMenuBar(CommonObjects* common);
 void DisplayWelcomeText();
-void DrawInputControls(CommonObjects* common, int& type_currentItem, int& country_currentItem);
-void DrawBreweryTable(CommonObjects* common);
+void DrawInputControls(CommonObjects* common, int& type_currentItem, int& country_currentItem, std::vector<bool>& expanded);
+void DrawBreweryTable(CommonObjects* common, std::vector<bool>& expanded);
 void DisplayNoDataMessage();
+void ResetExpanded(std::vector<bool>& expanded);
 
 
 // Function to handle drawing in a separate thread
@@ -61,11 +62,17 @@ void DrawAppWindow(void* common_ptr) {
 
     ImGui::SetWindowSize(screenSize);
 
+
+
     // Draw the menu bar, welcome text, input controls, and brewery table
     DrawMenuBar(common);
     DisplayWelcomeText();
-    DrawInputControls(common, type_currentItem, country_currentItem);
-    DrawBreweryTable(common);
+
+    // Create vector to see who needs to show
+    static std::vector<bool> expanded(common->breweries.size(), false);
+
+    DrawInputControls(common, type_currentItem, country_currentItem, expanded);
+    DrawBreweryTable(common, expanded);
 
     ImGui::End();
     // Pop style changes
@@ -126,7 +133,8 @@ void DisplayWelcomeText() {
 }
 
 // Draw input controls for search
-void DrawInputControls(CommonObjects* common, int& type_currentItem, int& country_currentItem) {
+void DrawInputControls(CommonObjects* common, int& type_currentItem, int& country_currentItem, std::vector<bool>& expanded)
+{
     const char* type_options[] = {
         "micro", "nano", "regional", "brewpub", "large", "planning",
         "bar", "contract", "proprietor", "closed"
@@ -143,6 +151,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
     ImGui::SameLine();
 
     if (ImGui::Button("Search")) {
+        ResetExpanded(expanded);
         // Lock the mutex to protect shared data
         std::lock_guard<std::mutex> lock_guard(common->mutex);
         // Update search parameters and notify the condition variable
@@ -162,6 +171,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         for (int i = 0; i < IM_ARRAYSIZE(type_options); i++) {
             bool isSelected = (type_currentItem == i);
             if (ImGui::Selectable(type_options[i], isSelected)) {
+                ResetExpanded(expanded);
                 // Lock the mutex to protect shared data
                 std::lock_guard<std::mutex> lock_guard(common->mutex);
                 // Update type filter and notify the condition variable
@@ -188,6 +198,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         for (int i = 0; i < IM_ARRAYSIZE(country_options); i++) {
             bool isSelected = (country_currentItem == i);
             if (ImGui::Selectable(country_options[i], isSelected)) {
+                ResetExpanded(expanded);
                 // Lock the mutex to protect shared data
                 std::lock_guard<std::mutex> lock_guard(common->mutex);
                 // Update country filter and notify the condition variable
@@ -212,6 +223,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
 
     ImGui::SameLine();
     if (ImGui::Button("Favorites")) {
+        ResetExpanded(expanded);
         auto favorites = getFavorites();
         common->breweries = favorites;
         common->data_ready = true;
@@ -219,6 +231,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
 
     ImGui::SameLine();
     if (ImGui::Button("Reset")) {
+        ResetExpanded(expanded);
         // Lock the mutex to protect shared data
         std::lock_guard<std::mutex> lock_guard(common->mutex);
         // Reset search parameters and notify the condition variable
@@ -235,7 +248,7 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
 }
 
 // Draw the table of breweries
-void DrawBreweryTable(CommonObjects* common) {
+void DrawBreweryTable(CommonObjects* common, std::vector<bool>& expanded) {
     if (common->data_ready) {
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_TableHeaderBg, ImVec4(0.9f, 0.6f, 0.3f, 1.0f));
         if (ImGui::BeginTable("Breweries", 5, ImGuiTableFlags_SizingStretchProp)) {
@@ -247,7 +260,6 @@ void DrawBreweryTable(CommonObjects* common) {
 
             ImGui::TableHeadersRow();
 
-            static std::vector<bool> expanded(common->breweries.size(), false);
             expanded.resize(common->breweries.size(), false);
 
             for (size_t i = 0; i < common->breweries.size(); ++i) {
@@ -292,6 +304,12 @@ void DrawBreweryTable(CommonObjects* common) {
     else {
         DisplayNoDataMessage();
     }
+}
+
+// Reset epanded states to false 
+void ResetExpanded(std::vector<bool>& expanded)
+{
+    std::fill(expanded.begin(), expanded.end(), false);
 }
 
 // Display message if no data is available
