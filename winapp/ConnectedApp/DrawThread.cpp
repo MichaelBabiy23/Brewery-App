@@ -25,15 +25,6 @@ void DrawBreweryTable(CommonObjects* common, std::vector<bool>& expanded);
 void DisplayNoDataMessage();
 void ResetExpanded(std::vector<bool>& expanded);
 
-
-// Function to handle drawing in a separate thread
-void DrawThread::operator()(CommonObjects& common) {
-    // Start the GUI main loop with the DrawAppWindow function and the common object
-    GuiMain(&DrawAppWindow, &common);
-    // Set the exit flag to true when the main loop exits
-    common.exit_flag = true;
-}
-
 // Drawing the main application window
 void DrawAppWindow(void* common_ptr) {
 
@@ -158,6 +149,8 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         common->current_search = buff;
         common->current_countries = "";
         common->current_type = "";
+        country_currentItem = -1;
+        type_currentItem = -1;
         common->breweries.clear();
         common->cv.notify_one(); // Notify one waiting thread
     }
@@ -179,8 +172,8 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
                 common->current_type = type_options[type_currentItem];
                 common->current_countries = "";
                 common->current_search = "";
-                buff[0] = '\0';
                 country_currentItem = -1;
+                buff[0] = '\0';
                 common->breweries.clear();
                 common->cv.notify_one(); // Notify one waiting thread
             }
@@ -205,9 +198,9 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
                 country_currentItem = i;
                 common->current_countries = country_options[country_currentItem];
                 common->current_search = "";
-                buff[0] = '\0';
-                common->current_type = "";
+                common->current_type = "";               
                 type_currentItem = -1;
+                buff[0] = '\0';
                 common->breweries.clear();
                 common->cv.notify_one(); // Notify one waiting thread
             }
@@ -227,6 +220,11 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         auto favorites = getFavorites();
         common->breweries = favorites;
         common->data_ready = true;
+        country_currentItem = -1;
+        type_currentItem = -1;
+        common->current_search = "";
+        common->current_type = "";
+        buff[0] = '\0';
     }
 
     ImGui::SameLine();
@@ -238,9 +236,9 @@ void DrawInputControls(CommonObjects* common, int& type_currentItem, int& countr
         common->current_countries = "";
         common->current_type = "";
         common->current_search = "";
-        buff[0] = '\0';
         type_currentItem = -1;
         country_currentItem = -1;
+        buff[0] = '\0';
         common->breweries.clear();
         common->reset = true;
         common->cv.notify_one(); // Notify one waiting thread
@@ -330,4 +328,12 @@ void DrawThread::black_line() {
         IM_COL32(0, 0, 0, 255));
 
     ImGui::Dummy(ImVec2(0, 10)); // Dummy space for padding
+}
+
+// Function to handle drawing in a separate thread
+void DrawThread::operator()(CommonObjects& common) {
+    // Start the GUI main loop with the DrawAppWindow function and the common object
+    GuiMain(&DrawAppWindow, &common);
+    // Set the exit flag to true when the main loop exits
+    common.exit_flag = true;
 }
